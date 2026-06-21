@@ -57,22 +57,6 @@ class Utils
     end
   end
 
-  def self.reset_logs!
-    if log_to_gcs?
-      GCS.upload_text_as_file(
-        text: "",
-        dest: log_gcs_path,
-        cache_control: GCS::CACHE_CONTROL_NO_STORE
-      )
-    elsif ENV["LOG_PATH"].present?
-      File.write(ENV["LOG_PATH"], "")
-    end
-  rescue => e
-    puts "WARNING: failed to reset logs: #{e.class} #{e.message}"
-    return if ENV["LOG_PATH"].blank?
-    File.write(ENV["LOG_PATH"], "")
-  end
-
   def self.log_to_gcs?
     GCS.present? && log_gcs_path.present?
   end

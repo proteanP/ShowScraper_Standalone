@@ -38,8 +38,8 @@ class FreightAndSalvage
       return if block.blank?
       return if block.include?("CANCELED")
 
-      img, url = block.match(/\[!\[Image \d+\]\((.*?)\)\]\((https:\/\/secure\.thefreight\.org\/[^)]+)\)/m)&.captures
-      title = block[/## \[(.*?)\]\(https:\/\/secure\.thefreight\.org\/[^)]+\)/m, 1].to_s.strip
+      img, url = block.match(/\[!\[Image \d+\]\((.*?)\)\]\((https:\/\/[^)]+)\)/m)&.captures
+      title = block[/## \[(.*?)\]\(https:\/\/[^)]+\)/m, 1].to_s.strip
       date_match = block.match(/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s+([A-Za-z]{3})\s+(\d{1,2})(?:st|nd|rd|th)\s+(\d{4}).*?Show:\s*(\d{1,2}:\d{2}\s*[AP]M)/m)
 
       return if title.blank? || date_match.blank?

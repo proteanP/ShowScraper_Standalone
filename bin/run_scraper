@@ -28,6 +28,16 @@ OptionParser.new do |opt|
   end
 end.parse!
 
+# Dry runs must never reset or append to the production GCS scraper log.
+# A caller can still set LOG_PATH to capture dry-run output locally.
+if opts[:skip_persist]
+  ENV["LOG_GCS_PATH"] = ""
+  ENV["LOG_PATH"] = ENV.fetch(
+    "DRY_RUN_LOG_PATH",
+    File.expand_path("../tmp/dry_run.log", __dir__)
+  )
+end
+
 puts "SOURCES: #{opts[:sources]}"
 
 Utils.reset_logs!

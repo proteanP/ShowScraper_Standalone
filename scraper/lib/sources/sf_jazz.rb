@@ -5,6 +5,7 @@ class SfJazz
   MAIN_URL = "https://www.sfjazz.org/calendar/"
   MIRROR_PREFIX = "https://r.jina.ai/http://"
   DEFAULT_IMG = "https://ybgfestival.org/wp-content/uploads/2014/03/sfjazz-logo-21-300x300-300x300.jpg"
+  CALENDAR_MONTHS_AHEAD = 12
 
   cattr_accessor :events_limit
   self.events_limit = 200
@@ -19,11 +20,17 @@ class SfJazz
     private
 
     def fetch_events
-      extract_calendar_events(fetch_markdown(MAIN_URL)).
+      calendar_urls.flat_map { |url| extract_calendar_events(fetch_markdown(url)) }.
+        select { |event| event[:date].to_date >= Date.today }.
         sort_by { |event| event[:date] }.
         uniq { |event| [event[:url], event[:date], event[:title]] }
     rescue Faraday::Error => e
       raise "SfJazz mirror request failed: #{e.message}"
+    end
+
+    def calendar_urls
+      ([Date.today] + (1..CALENDAR_MONTHS_AHEAD).map { |month| Date.today.next_month(month).beginning_of_month }).
+        map { |date| "#{MAIN_URL}?date=#{date.iso8601}&layout=A" }
     end
 
     def parse_event_data(event, &foreach_event_blk)
@@ -59,6 +66,7 @@ class SfJazz
 
     def extract_calendar_events(markdown)
       current_date = nil
+      current_title = nil
       year = Date.today.year
 
       markdown.lines.map(&:strip).filter_map do |line|
@@ -66,6 +74,7 @@ class SfJazz
         if date_text.present?
           current_date = DateTime.parse("#{date_text} #{year}")
           current_date = current_date.next_year if current_date.to_date < Date.today - 31
+          current_title = line[%r{#### \[([^\]]+)\]\(https://www\.sfjazz\.org/[^)]+\)}, 1]
           next
         end
 
@@ -77,7 +86,7 @@ class SfJazz
           url: url,
           img: img,
           date: current_date,
-          title: title_from_url(url),
+          title: current_title.presence || title_from_url(url),
           details: details_from_url(url)
         }
       end

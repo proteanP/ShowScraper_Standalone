@@ -1,6 +1,10 @@
+require "json"
+require "open-uri"
+
 class Regency
   # No pagination needed here, all events shown at once.
   MAIN_URL = "https://www.theregencyballroom.com/shows/"
+  EVENTS_URL = "https://aegwebprod.blob.core.windows.net/json/events/9/events.json"
 
   cattr_accessor :events_limit
   self.events_limit = 200
@@ -20,25 +24,35 @@ class Regency
     private
 
     def get_events
-      $driver.navigate.to(MAIN_URL)
-      sleep 2
-      $driver.css(".c-axs-event-card__wrapper").reject { |node| node['class'].include?('mobile') }
+      JSON.parse(URI.open(EVENTS_URL).read).fetch("events", [])
     end
 
     def parse_event_data(event, &foreach_event_blk)
-      date = event.css(".date")[0]&.text || return
-      return if date.blank?
+      date = event["eventDateTimeISO"] || event["eventDateTimeUTC"] || event["eventDateTime"] || return
+      title = event.dig("title", "eventTitleText") || event.dig("title", "headlinersText") || return
       {
         date: DateTime.parse(date),
-        url: (event.css(".c-axs-event-card__header")[0] || event.css(".c-axs-event-card__image a")[0]).attribute("href"),
-        img: (event.css(".mediaImage")[0] || event.css(".u-img-respond")[0]).attribute("src"),
-        title: event.css(".c-axs-event-card__title")[0].text,
+        url: event_url(event),
+        img: event_image(event),
+        title: title,
         details: ""
       }.
         tap { |data| Utils.print_event_preview(self, data) }.
         tap { |data| foreach_event_blk&.call(data) }
     rescue => e
       ENV["DEBUGGER"] == "true" ? binding.pry : raise
+    end
+
+    def event_url(event)
+      event_id = event["eventId"] || event["id"]
+      return event.dig("ticketing", "eventUrl") if event_id.blank?
+      "https://www.theregencyballroom.com/events/detail?event_id=#{event_id}"
+    end
+
+    def event_image(event)
+      media = event["media"] || event["relatedMedia"] || {}
+      images = media.is_a?(Hash) ? media.values : Array(media)
+      images.find { |item| item.is_a?(Hash) && item["file_name"].present? }&.fetch("file_name", nil)
     end
   end
 end

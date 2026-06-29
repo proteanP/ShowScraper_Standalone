@@ -23,27 +23,21 @@ class SiestaValleyBowl
 
     def parse_event_data(item, &foreach_event_blk)
       card = item.at_css(".svb-show-card")
-      title = card["data-artist"].to_s.strip
+      artist = card["data-artist"].to_s.strip
+      support = card["data-support"].to_s.strip.presence
+      title = [artist, support].compact.join(", ")
       return if title.empty?
-
-      support = card["data-support"].to_s.strip
-      details = [support.presence && "Support: #{support}", extract_bio(item)].compact.join("\n\n")
 
       {
         url: normalize_url(card["data-ticket"].presence || card["href"]),
         img: card.at_css(".svb-show-img")&.[]("src").to_s,
         date: parse_date(item.at_css("[data-event-date='true']")&.text, card["data-time"]),
-        title: title,
-        details: details
+        title: title
       }.
         tap { |data| Utils.print_event_preview(self, data) }.
         tap { |data| foreach_event_blk&.call(data) }
     rescue => e
       ENV["DEBUGGER"] == "true" ? binding.pry : raise
-    end
-
-    def extract_bio(item)
-      item.at_css(".svb-hidden-bio")&.xpath(".//text()")&.map(&:text)&.join(" ")&.gsub(/\s+/, " ")&.strip.to_s
     end
 
     def normalize_url(url)

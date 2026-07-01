@@ -20,12 +20,18 @@ class SfJazz
     private
 
     def fetch_events
-      calendar_urls.flat_map { |url| extract_calendar_events(fetch_markdown(url)) }.
+      fetch_calendar_markdowns.flat_map { |markdown| extract_calendar_events(markdown) }.
         select { |event| event[:date].to_date >= Date.today }.
         sort_by { |event| event[:date] }.
         uniq { |event| [event[:url], event[:date], event[:title]] }
     rescue Faraday::Error => e
       raise "SfJazz mirror request failed: #{e.message}"
+    end
+
+    def fetch_calendar_markdowns
+      calendar_urls.map do |url|
+        Thread.new { fetch_markdown(url) }
+      end.map(&:value)
     end
 
     def calendar_urls

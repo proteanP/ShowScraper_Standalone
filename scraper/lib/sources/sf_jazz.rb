@@ -8,6 +8,7 @@ class SfJazz
   CALENDAR_MONTHS_AHEAD = 12
   MIRROR_RETRY_STATUSES = [429, 500, 502, 503, 504].freeze
   MIRROR_MAX_ATTEMPTS = 3
+  MIRROR_WORKERS = 4
 
   cattr_accessor :events_limit
   self.events_limit = 200
@@ -31,7 +32,29 @@ class SfJazz
     end
 
     def fetch_calendar_markdowns
-      calendar_urls.map { |url| fetch_markdown(url) }
+      urls = calendar_urls
+      results = Array.new(urls.length)
+      errors = Queue.new
+      jobs = Queue.new
+      urls.each_with_index { |url, index| jobs << [index, url] }
+
+      [MIRROR_WORKERS, urls.length].min.times.map do
+        Thread.new do
+          loop do
+            index, url = jobs.pop(true)
+            results[index] = fetch_markdown(url)
+          rescue ThreadError
+            break
+          rescue => e
+            errors << e
+            break
+          end
+        end
+      end.each(&:join)
+
+      raise errors.pop unless errors.empty?
+
+      results.compact
     end
 
     def calendar_urls

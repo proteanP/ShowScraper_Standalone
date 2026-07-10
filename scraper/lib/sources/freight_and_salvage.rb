@@ -32,16 +32,19 @@ class FreightAndSalvage
     def fetch_productions
       response = Faraday.post(API_URL) do |req|
         req.headers["RequestVerificationToken"] = fetch_request_verification_token
-        req.headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"
-        req.body = URI.encode_www_form(
-          startDate: Date.today.iso8601,
-          endDate: Date.today.next_year.iso8601
+        req.headers["Content-Type"] = "application/json"
+        req.headers["Accept"] = "application/json"
+        req.body = JSON.generate(
+          startDate: Date.today.strftime("%Y-%m-%dT00:00"),
+          endDate: Date.today.next_year.strftime("%Y-%m-%dT23:59"),
+          keywords: []
         )
       end
 
       raise "FreightAndSalvage API fetch failed: #{response.status}" unless response.success?
 
-      JSON.parse(response.body)
+      data = JSON.parse(response.body)
+      data.is_a?(Hash) ? data.fetch("productions", []) : data
     end
 
     def fetch_request_verification_token

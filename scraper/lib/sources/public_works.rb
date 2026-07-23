@@ -5,6 +5,7 @@ require "open-uri"
 class PublicWorks
   MAIN_URL = "https://publicsf.com/calendar/"
   API_URL = "https://publicsf.com/wp-json/wp/v2/pages/2515"
+  TIME_ZONE = "America/Los_Angeles"
 
   cattr_accessor :events_limit
   self.events_limit = 200
@@ -52,8 +53,11 @@ class PublicWorks
     end
 
     def parse_date(date_text)
-      parsed = DateTime.parse("#{date_text} #{Date.today.year}")
-      parsed < Date.today ? parsed.next_year : parsed
+      zone = Time.find_zone!(TIME_ZONE)
+      today = zone.today
+      parsed = Date.strptime("#{date_text} #{today.year}", "%b %d %Y")
+      parsed = parsed.next_year if parsed < today
+      zone.local(parsed.year, parsed.month, parsed.day).to_datetime
     rescue ArgumentError
       raise "PublicWorks invalid event date: #{date_text}"
     end

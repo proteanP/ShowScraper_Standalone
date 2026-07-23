@@ -102,6 +102,7 @@ class TheList
         "Paramount",
         "Fox Theater",
         "Great Northern",
+        "Public Works",
         "Kilowatt",
         "New Parish",
         "Next of the Woods",

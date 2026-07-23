@@ -490,6 +490,16 @@
       "img": "https://www.mercurynews.com/wp-content/uploads/2020/05/SJM-L-CLOSED-0526-02.jpg?w=1024"
     },
     {
+      "name": "ThePlanetarium",
+      "commonName": "The Planetarium",
+      "website": "https://ragtagshows.com/",
+      "region": "East Bay",
+      "mapLink": "",
+      "latlng": "37.8980068, -122.3097113",
+      "desc": "All-ages, substance-free 100-120 capacity venue operating out of Intergalactic Studios in Richmond.",
+      "img": "https://ragtagshows.com/logos_ragtag_crop.png"
+    },
+    {
       "name": "SiestaValleyBowl",
       "commonName": "Siesta Valley Bowl",
       "website": "https://www.siestavalleybowl.com/",

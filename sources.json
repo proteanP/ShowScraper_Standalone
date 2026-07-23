@@ -190,6 +190,16 @@
       "img": "https://1015.com/wp-content/uploads/2023/09/1015-Open-Graph.jpg"
     },
     {
+      "name": "TheLostChurch",
+      "commonName": "The Lost Church",
+      "website": "https://thelostchurch.org/san-francisco/",
+      "region": "San Francisco",
+      "mapLink": "",
+      "latlng": "37.8034232, -122.4143732",
+      "desc": "Intimate nonprofit arts venue in North Beach featuring live music, comedy, theater, storytelling, and other small-stage performances.",
+      "img": "https://thelostchurch.org/app/uploads/2024/06/TLC_sanfran2021_RGB.png"
+    },
+    {
       "name": "Fillmore",
       "commonName": "Fillmore",
       "website": "https://www.livenation.com/venue/KovZpZAE6eeA/the-fillmore-events",

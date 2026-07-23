@@ -113,6 +113,7 @@ class TheList
         "Black Cat",
         "Black Cat Jazz Supper Club",
         "1015 Folsom",
+        "The Lost Church",
       ].map do |known_venue|
         known_venue.downcase.gsub(/[^0-9a-z ]/i, '')
       end

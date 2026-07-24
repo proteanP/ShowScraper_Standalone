@@ -40,38 +40,6 @@ class Ashkenaz
     }
   GRAPHQL
 
-  EXCLUDED_TEXT_PATTERNS = [
-    /comedy/i,
-    /story[\s-]*telling/i,
-    /workshop/i,
-    /\bclass(?:es)?\b/i,
-    /\binstruction(?:al)?\b/i,
-    /\blesson(?:s)?\b/i
-  ].freeze
-
-  INCLUDED_TEXT_PATTERNS = [
-    /album release/i,
-    /band/i,
-    /bluegrass/i,
-    /blues/i,
-    /cajun/i,
-    /concert/i,
-    /dance/i,
-    /folk/i,
-    /funk/i,
-    /grateful dead/i,
-    /jam/i,
-    /jazz/i,
-    /music/i,
-    /rock/i,
-    /salsa/i,
-    /show/i,
-    /soul/i,
-    /square dance/i,
-    /timba/i,
-    /zydeco/i
-  ].freeze
-
   cattr_accessor :events_limit
   self.events_limit = 200
 
@@ -137,7 +105,7 @@ class Ashkenaz
 
     def parse_event_data(event, &foreach_event_blk)
       title = parse_title(event)
-      return if title.blank? || excluded_event?(event, title)
+      return if title.blank?
 
       {
         url: event_url(event),
@@ -157,23 +125,6 @@ class Ashkenaz
         map { |part| normalize_text(part) }.
         reject(&:blank?).
         join(", ")
-    end
-
-    def excluded_event?(event, title)
-      title_text = normalize_text(title)
-      source_text = [title, event["description"]].map { |value| normalize_text(value) }.join(" ")
-
-      return true if title_text.match?(excluded_pattern)
-
-      !source_text.match?(included_pattern)
-    end
-
-    def included_pattern
-      Regexp.union(INCLUDED_TEXT_PATTERNS)
-    end
-
-    def excluded_pattern
-      Regexp.union(EXCLUDED_TEXT_PATTERNS)
     end
 
     def parse_date(event)

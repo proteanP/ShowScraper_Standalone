@@ -72,6 +72,8 @@ class TheList
         "Cornerstone",
         "El Rio",
         "Freight",
+        "924 Gilman",
+        "924 Gilman Street",
         "Zeitgeist",
         "Grey Area",
         "Chapel",

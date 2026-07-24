@@ -600,6 +600,16 @@
       "img": "https://sweetwatermusichall.org/wp-content/uploads/2021/04/SWEETWATER-LOGO-black.png"
     },
     {
+      "name": "BoomBoomRoom",
+      "commonName": "Boom Boom Room",
+      "website": "https://boomboomroom.com/",
+      "region": "San Francisco",
+      "mapLink": "",
+      "latlng": "37.7846065, -122.4332374",
+      "desc": "Fillmore District club presenting blues, funk, soul, groove, jam, and late-night live music.",
+      "img": "https://boomboomroom.com/wp-content/uploads/2023/01/bbr-signage-logo.png"
+    },
+    {
       "name": "TheList",
       "commonName": "The List",
       "website": "http://www.foopee.com/punk/the-list/",

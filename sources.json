@@ -220,6 +220,16 @@
       "img": "https://pbs.twimg.com/profile_images/1458164350271713284/3qYmAR1s_400x400.jpg"
     },
     {
+      "name": "GreatStarTheater",
+      "commonName": "Great Star Theater",
+      "website": "https://www.greatstartheater.org/whats-playing",
+      "region": "San Francisco",
+      "mapLink": "",
+      "latlng": "37.7955, -122.4063",
+      "desc": "Historic Chinatown nonprofit theater presenting live performance, comedy, circus, film, music, and community events.",
+      "img": "https://www.greatstartheater.org/images/gst-logo-round.png"
+    },
+    {
       "name": "F8",
       "commonName": "F8",
       "website": "https://www.feightsf.com/",

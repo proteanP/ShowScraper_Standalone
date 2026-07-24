@@ -230,6 +230,7 @@ Primary vars:
 4. Run:
    - `bin/run_scraper --sources <SourceClass> --limit 5 --skip-persist`
 5. Verify no missing required keys (`url`, `date`, `title`) and date parsing stability.
+6. Every ready-for-review PR description for scraper additions or repairs must include a fenced `json` block containing an array of two or three representative events actually created by the focused verification run. Preserve the exact emitted JSON keys and exact values for those events; do not convert the sample to a table, Ruby hashes, prose, fabricated examples, or normalized placeholders. The sample should make omitted and present fields truthful to actual output.
 
 ### Common implementation patterns
 

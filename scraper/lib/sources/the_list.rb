@@ -121,6 +121,10 @@ class TheList
         "Keys Jazz Bistro SF",
         "Keys Bistro",
         "Keys Jazz",
+        "Music City San Francisco",
+        "Music City SF",
+        "Music City Starfactory",
+        "Music City Underground",
       ].map do |known_venue|
         known_venue.downcase.gsub(/[^0-9a-z ]/i, '')
       end

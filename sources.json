@@ -220,6 +220,16 @@
       "img": "https://themab.org/wp-content/uploads/2025/09/fab-mab-1-1.png"
     },
     {
+      "name": "MusicCitySanFrancisco",
+      "commonName": "Music City San Francisco",
+      "website": "https://musiccitysf.com/mcsf-venue/",
+      "region": "San Francisco",
+      "mapLink": "",
+      "latlng": "37.7885268, -122.4195056",
+      "desc": "Lower Nob Hill live music complex with multiple stages for local artists, bands, DJs, comedy, and other performances.",
+      "img": "https://musiccitysf.com/wp-content/uploads/DSC08730-scaled-e1704914947522.jpg"
+    },
+    {
       "name": "KeysJazzBistro",
       "commonName": "Keys Jazz Bistro",
       "website": "https://keysjazzbistro.com/",

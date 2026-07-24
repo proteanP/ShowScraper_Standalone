@@ -50,6 +50,16 @@
       "img": "https://imgproxy.ra.co/_/quality:66/aHR0cHM6Ly9zdGF0aWMucmEuY28vaW1hZ2VzL3Byb21vdGVyL3VzLWdyYXlhcmVhbnljLmpwZz9kYXRlVXBkYXRlZD0xNjUyODI1MDIzMTA3"
     },
     {
+      "name": "FourStarTheater",
+      "commonName": "4 Star Theater",
+      "website": "https://www.4-star-movies.com/calendar",
+      "region": "San Francisco",
+      "mapLink": "",
+      "latlng": "37.7822709, -122.4829270",
+      "desc": "Independent Richmond District cinema presenting repertory film screenings, family matinees, and live music events.",
+      "img": "https://images.squarespace-cdn.com/content/v1/616e05b9520d8e7b1cd0a788/1670188042689-U36U9UUZ6S42ZFIC0Q1Q/4+star+logo+50s+copy.jpg"
+    },
+    {
       "name": "TheLab",
       "commonName": "The Lab",
       "website": "https://www.thelab.org/",

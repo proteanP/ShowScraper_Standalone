@@ -133,6 +133,7 @@ class TheList
         "Ashkenaz Music & Dance Community Center",
         "Starry Plough",
         "The Starry Plough",
+        "Boom Boom Room",
       ].map do |known_venue|
         known_venue.downcase.gsub(/[^0-9a-z ]/i, '')
       end

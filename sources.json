@@ -120,6 +120,16 @@
       "img": "https://fastly.4sqi.net/img/general/600x600/506027_gw6nDzNhNg2huOSRgRacIFQAnvVD2TLV4REOrOKplTc.jpg"
     },
     {
+      "name": "Ashkenaz",
+      "commonName": "Ashkenaz",
+      "website": "https://www.ashkenaz.com/",
+      "region": "East Bay",
+      "mapLink": "",
+      "latlng": "37.8801212, -122.2952932",
+      "desc": "Nonprofit Berkeley music and dance venue presenting all-ages live performances and community dance events.",
+      "img": "https://images.squarespace-cdn.com/content/v1/625089567b663650df4caa4a/64f02315-77ad-4bd3-a6e1-18d0df897d1d/Untitled+design+%281%29.png"
+    },
+    {
       "name": "NineTwentyFourGilman",
       "commonName": "924 Gilman",
       "website": "https://linktr.ee/924gilmanstreet",

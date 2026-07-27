@@ -3,6 +3,7 @@ require 'open-uri'
 
 class MusicCitySanFrancisco
   ORGANIZER_EVENTS_URL = "https://www.eventbrite.com/api/v3/organizers/12803819712/events/"
+  EVENTBRITE_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
 
   cattr_accessor :events_limit
   self.events_limit = 200
@@ -34,7 +35,7 @@ class MusicCitySanFrancisco
 
     def fetch_events_page(page)
       url = "#{ORGANIZER_EVENTS_URL}?status=live&expand=venue,logo&order_by=start_asc&page=#{page}"
-      JSON.parse(URI.open(url).read)
+      JSON.parse(URI.open(url, "User-Agent" => EVENTBRITE_USER_AGENT, "Accept" => "application/json").read)
     end
 
     def parse_event_data(event, &foreach_event_blk)

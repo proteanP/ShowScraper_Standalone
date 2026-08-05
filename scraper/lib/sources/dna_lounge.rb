@@ -27,7 +27,7 @@ class DnaLounge
     private
 
     def get_events
-      rss_content = URI.open(MAIN_URL).read
+      rss_content = URI.open(MAIN_URL, "User-Agent" => "Mozilla/5.0").read
       rss = RSS::Parser.parse(rss_content, false)
       rss.items
     end

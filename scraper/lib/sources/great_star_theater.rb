@@ -30,7 +30,7 @@ class GreatStarTheater
 
     def parse_event_data(event, &foreach_event_blk)
       title = parse_title(event)
-      return if title.blank?
+      return if title.blank? || event["href"].blank?
 
       start_time, end_time = parse_date_range(event)
       return if start_time.blank? || end_time.blank?

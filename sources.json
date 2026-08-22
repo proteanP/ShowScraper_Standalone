@@ -630,6 +630,16 @@
       "img": "https://ranchonicasio.com/wp-content/uploads/2024/04/Rancho_logo.png"
     },
     {
+      "name": "HopMonkNovato",
+      "commonName": "HopMonk Tavern Novato",
+      "website": "https://www.hopmonk.com/novato/",
+      "region": "North Bay",
+      "mapLink": "",
+      "latlng": "38.108, -122.570",
+      "desc": "Novato tavern with year-round Session Room shows and the outdoor Cookout Concert Series.",
+      "img": ""
+    },
+    {
       "name": "BoomBoomRoom",
       "commonName": "Boom Boom Room",
       "website": "https://boomboomroom.com/",

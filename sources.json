@@ -620,6 +620,16 @@
       "img": "https://sweetwatermusichall.org/wp-content/uploads/2021/04/SWEETWATER-LOGO-black.png"
     },
     {
+      "name": "RanchoNicasio",
+      "commonName": "Rancho Nicasio",
+      "website": "https://ranchonicasio.com/venue/rancho-nicasio/page/2/",
+      "region": "North Bay",
+      "mapLink": "",
+      "latlng": "38.061, -122.700",
+      "desc": "Historic Nicasio roadhouse, restaurant, and live-music venue presenting local and touring artists.",
+      "img": "https://ranchonicasio.com/wp-content/uploads/2024/04/Rancho_logo.png"
+    },
+    {
       "name": "BoomBoomRoom",
       "commonName": "Boom Boom Room",
       "website": "https://boomboomroom.com/",

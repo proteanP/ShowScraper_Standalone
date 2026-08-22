@@ -138,6 +138,8 @@ class TheList
         "4 Star Theater",
         "4 Star Theatre",
         "Great Star Theater",
+        "HopMonk Novato",
+        "HopMonk Tavern Novato",
       ].map do |known_venue|
         known_venue.downcase.gsub(/[^0-9a-z ]/i, '')
       end

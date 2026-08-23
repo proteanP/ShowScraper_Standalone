@@ -5,12 +5,6 @@ require "open-uri"
 class OneFourTwoThrockmorton
   MAIN_URL = "https://www.throckmortontheatre.org/events"
 
-  # The calendar is shared with comedy, theatre, camps, classes, and exhibits.
-  # Squarespace does not assign music a category, so only accept listings whose
-  # official title or excerpt explicitly identifies a music performance.
-  MUSIC_SIGNAL = /\b(?:music|concert|jazz|musicians?|vocalist|pianist|bassist|percussionist|guitarist|violinist|singer(?:-|\s)writer|band|orchestra|chorus|django|slack key|crooner|swing)\b/i
-  NON_MUSIC_SIGNAL = /\b(?:comedy|comic|theat(?:re|er)|musical|camp|class|workshop|exhibit|artwalk|film|clown|puppetry|audition|dance)\b/i
-
   cattr_accessor :events_limit
   self.events_limit = 200
 
@@ -30,7 +24,7 @@ class OneFourTwoThrockmorton
     def parse_event_data(event, &foreach_event_blk)
       title = event.at_css(".eventlist-title")&.text&.strip
       excerpt = event.at_css(".eventlist-excerpt")&.text.to_s.gsub(/\s+/, " ").strip
-      return unless title.present? && music_event?(title, excerpt)
+      return unless title.present?
 
       date = event.at_css(".event-date")&.[]("datetime")
       time = event.at_css(".event-time-localized-start")&.text&.strip
@@ -47,11 +41,6 @@ class OneFourTwoThrockmorton
         tap { |data| foreach_event_blk&.call(data) }
     rescue => e
       ENV["DEBUGGER"] == "true" ? binding.pry : raise
-    end
-
-    def music_event?(title, excerpt)
-      listing = [title, excerpt].join(" ")
-      listing.match?(MUSIC_SIGNAL) && !title.match?(NON_MUSIC_SIGNAL)
     end
 
     def absolute_url(url)

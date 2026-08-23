@@ -12,7 +12,7 @@ class PerisTavern
 
   def self.run(events_limit: self.events_limit, &foreach_event_blk)
     events = []
-    music_events.each do |event|
+    calendar_events.each do |event|
       break if events.count >= events_limit
 
       result = parse_event_data(event, &foreach_event_blk)
@@ -24,9 +24,9 @@ class PerisTavern
   class << self
     private
 
-    def music_events
+    def calendar_events
       Nokogiri::HTML(URI.open(events_url, "User-Agent" => "Mozilla/5.0").read).
-        css('.EventGridItem[data-event-category="Music"]')
+        css(".EventGridItem")
     end
 
     def events_url

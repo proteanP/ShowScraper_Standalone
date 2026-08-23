@@ -650,6 +650,16 @@
       "img": "https://pbs.twimg.com/media/D7TjIXEU0AA2rGu?format=jpg&name=large"
     },
     {
+      "name": "CoyoteCalendar",
+      "commonName": "COYOTE Calendar / Coyote Media",
+      "website": "https://www.coyotemedia.org/tag/calendar/",
+      "region": "Other",
+      "mapLink": "",
+      "latlng": "",
+      "desc": "Coyote Media's handpicked weekly Bay Area event calendar. Listings link to the originating event when Coyote provides one.",
+      "img": "https://www.coyotemedia.org/favicon.png"
+    },
+    {
       "name": "Indybay",
       "commonName": "Indybay",
       "website": "https://www.indybay.org/calendar/",

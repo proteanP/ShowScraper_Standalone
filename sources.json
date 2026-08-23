@@ -620,6 +620,16 @@
       "img": "https://sweetwatermusichall.org/wp-content/uploads/2021/04/SWEETWATER-LOGO-black.png"
     },
     {
+      "name": "TheJunctionMillValley",
+      "commonName": "The Junction Mill Valley",
+      "website": "https://thejunc.simpletix.com/",
+      "region": "North Bay",
+      "mapLink": "",
+      "latlng": "37.8806271, -122.5231923",
+      "desc": "Mill Valley live-music venue and beer garden at 226 Shoreline Highway.",
+      "img": ""
+    },
+    {
       "name": "RanchoNicasio",
       "commonName": "Rancho Nicasio",
       "website": "https://ranchonicasio.com/venue/rancho-nicasio/page/2/",

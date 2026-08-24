@@ -640,6 +640,16 @@
       "img": "https://ranchonicasio.com/wp-content/uploads/2024/04/Rancho_logo.png"
     },
     {
+      "name": "PerisTavern",
+      "commonName": "Peri's Tavern",
+      "website": "https://peristavern.com/music-calendar/",
+      "region": "North Bay",
+      "mapLink": "",
+      "latlng": "37.9873, -122.5885",
+      "desc": "Fairfax tavern and live-music venue presenting local bands and recurring music nights.",
+      "img": "https://peristavern.com/wp-content/uploads/2022/01/peris-logo-white-med.png"
+    },
+    {
       "name": "BoomBoomRoom",
       "commonName": "Boom Boom Room",
       "website": "https://boomboomroom.com/",

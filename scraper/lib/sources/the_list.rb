@@ -130,6 +130,8 @@ class TheList
         "Sweetwater Music Hall",
         "Rancho Nicasio",
         "Mac's at 19 Broadway",
+        "Peri's Tavern",
+        "Peris Tavern",
         "Ashkenaz",
         "Ashkenaz Music and Dance Community Center",
         "Ashkenaz Music & Dance Community Center",

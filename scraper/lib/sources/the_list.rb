@@ -129,6 +129,7 @@ class TheList
         "Music City Underground",
         "Sweetwater Music Hall",
         "Rancho Nicasio",
+        "Mac's at 19 Broadway",
         "Peri's Tavern",
         "Peris Tavern",
         "Ashkenaz",

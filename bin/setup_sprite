@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+# Credential-free setup for a freshly cloned Sprite checkout.
+set -euo pipefail
+
+readonly ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly FIREFOX_DIR="$ROOT_DIR/bin/firefox"
+readonly FIREFOX_BIN="$FIREFOX_DIR/firefox"
+readonly GECKODRIVER_BIN="$ROOT_DIR/bin/geckodriver"
+readonly GECKODRIVER_VERSION="v0.35.0"
+
+fail() {
+  echo "ERROR: $*" >&2
+  exit 1
+}
+
+require_command() {
+  command -v "$1" >/dev/null 2>&1 || fail "Required command '$1' is unavailable. Install it, then run bin/setup_sprite again."
+}
+
+install_firefox() {
+  [[ -x "$FIREFOX_BIN" ]] && return
+
+  local arch url staging archive
+  arch="$(uname -m)"
+  case "$arch" in
+    x86_64) url='https://download.mozilla.org/?product=firefox-latest-ssl&os=linux64&lang=en-US' ;;
+    aarch64) url='https://download.mozilla.org/?product=firefox-latest-ssl&os=linux-aarch64&lang=en-US' ;;
+    *) fail "No bundled Firefox download is configured for architecture '$arch'. Install Firefox and adapt this script for that platform." ;;
+  esac
+
+  echo "Installing repository-local Firefox..."
+  staging="$(mktemp -d)"
+  archive="$staging/firefox.tar.bz2"
+  trap 'rm -rf "$staging"' RETURN
+  curl --fail --location --silent --show-error "$url" --output "$archive" || fail "Could not download Firefox. Check Sprite network access and retry."
+  tar xJf "$archive" -C "$staging" 2>/dev/null ||
+    tar xjf "$archive" -C "$staging" 2>/dev/null ||
+    tar xzf "$archive" -C "$staging" 2>/dev/null ||
+    fail "Could not extract the Firefox archive. Ensure tar supports the archive compression format."
+  [[ -x "$staging/firefox/firefox" ]] || fail "Firefox archive did not contain firefox/firefox. Retry after checking the download."
+  mkdir -p "$ROOT_DIR/bin"
+  rm -rf "$FIREFOX_DIR"
+  mv "$staging/firefox" "$FIREFOX_DIR"
+  trap - RETURN
+  rm -rf "$staging"
+}
+
+install_geckodriver() {
+  [[ -x "$GECKODRIVER_BIN" ]] && return
+
+  local arch platform staging archive url
+  arch="$(uname -m)"
+  case "$arch" in
+    x86_64) platform='linux64' ;;
+    aarch64) platform='linux-aarch64' ;;
+    *) fail "No geckodriver download is configured for architecture '$arch'. Install a compatible driver at $GECKODRIVER_BIN." ;;
+  esac
+  url="https://github.com/mozilla/geckodriver/releases/download/$GECKODRIVER_VERSION/geckodriver-$GECKODRIVER_VERSION-$platform.tar.gz"
+
+  echo "Installing repository-local geckodriver $GECKODRIVER_VERSION..."
+  staging="$(mktemp -d)"
+  archive="$staging/geckodriver.tar.gz"
+  trap 'rm -rf "$staging"' RETURN
+  curl --fail --location --silent --show-error "$url" --output "$archive" || fail "Could not download geckodriver. Check Sprite network access and retry."
+  tar xzf "$archive" -C "$staging" || fail "Could not extract the geckodriver archive."
+  [[ -f "$staging/geckodriver" ]] || fail "Geckodriver archive did not contain the geckodriver binary."
+  mkdir -p "$ROOT_DIR/bin"
+  install -m 0755 "$staging/geckodriver" "$GECKODRIVER_BIN"
+  trap - RETURN
+  rm -rf "$staging"
+}
+
+main() {
+  [[ "$(uname -s)" == 'Linux' ]] || fail "bin/setup_sprite currently supports Linux Sprite environments only."
+  require_command curl
+  require_command tar
+  require_command ruby
+  require_command bundle
+
+  cd "$ROOT_DIR"
+  # Sprite's shared Ruby installation is read-only; keep gems inside this checkout.
+  export BUNDLE_PATH="$ROOT_DIR/vendor/bundle"
+  install_firefox
+  install_geckodriver
+
+  echo "Installing locked Ruby gems..."
+  bundle install || fail "Ruby dependencies could not be installed. Resolve the Bundler error above and rerun bin/setup_sprite."
+
+  FIREFOX_PATH="$FIREFOX_BIN" GECKODRIVER_PATH="$GECKODRIVER_BIN" bin/verify_sprite_browser
+  echo 'Sprite setup and browser verification completed successfully.'
+}
+
+main "$@"

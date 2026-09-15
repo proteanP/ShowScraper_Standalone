@@ -62,6 +62,21 @@ bin/run_scraper --sources DnaLounge,Fillmore
 bin/run_scraper --headless false
 ```
 
+### Credential-free Sprite bootstrap
+
+For a freshly cloned Sprite checkout where a separate bootstrap owns any secrets,
+run:
+
+```bash
+bin/setup_sprite
+```
+
+This idempotently installs the repository-local Firefox and pinned geckodriver,
+installs the locked Ruby gems into `vendor/bundle`, and runs a 45-second headless Selenium smoke test.
+It neither loads nor copies `.env` or `credentials/`, makes no GCS writes, and
+removes the temporary Firefox profile when the test exits. To repeat only the
+no-network browser check, run `bin/verify_sprite_browser`.
+
 ## Configuration
 
 ### Environment Variables

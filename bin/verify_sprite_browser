@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# Runs a bounded, no-network Selenium launch using the paths the scraper consumes.
+set -euo pipefail
+
+readonly ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly FIREFOX_BIN="${FIREFOX_PATH:-$ROOT_DIR/bin/firefox/firefox}"
+readonly GECKODRIVER_BIN="${GECKODRIVER_PATH:-$ROOT_DIR/bin/geckodriver}"
+readonly PROFILE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/showscraper-selenium.XXXXXX")"
+
+fail() {
+  echo "ERROR: $*" >&2
+  exit 1
+}
+
+process_tree() {
+  local pid child
+  echo "$1"
+  while read -r child; do
+    [[ -n "$child" ]] && process_tree "$child"
+  done < <(pgrep -P "$1" 2>/dev/null || true)
+}
+
+cleanup() {
+  local pid
+  local -a pids=()
+  while read -r pid; do
+    [[ -n "$pid" ]] && pids+=( $(process_tree "$pid") )
+  done < <(ps -eo pid=,args= | awk -v profile="--profile=$PROFILE_ROOT" 'index($0, profile) { print $1 }')
+  ((${#pids[@]})) && kill -TERM "${pids[@]}" 2>/dev/null || true
+  sleep 1
+  ((${#pids[@]})) && kill -KILL "${pids[@]}" 2>/dev/null || true
+  rm -rf "$PROFILE_ROOT"
+}
+trap cleanup EXIT INT TERM
+
+[[ -x "$FIREFOX_BIN" ]] || fail "Firefox is not executable at $FIREFOX_BIN. Run bin/setup_sprite to install the repository-local browser."
+[[ -x "$GECKODRIVER_BIN" ]] || fail "Geckodriver is not executable at $GECKODRIVER_BIN. Run bin/setup_sprite to install the repository-local driver."
+command -v timeout >/dev/null 2>&1 || fail "The 'timeout' command is required to bound the Selenium smoke test."
+
+echo "Firefox: $($FIREFOX_BIN --version)"
+echo "Geckodriver: $($GECKODRIVER_BIN --version | head -n 1)"
+echo 'Launching bounded headless Selenium smoke test...'
+
+cd "$ROOT_DIR"
+export BUNDLE_PATH="${BUNDLE_PATH:-$ROOT_DIR/vendor/bundle}"
+if ! FIREFOX_PATH="$FIREFOX_BIN" GECKODRIVER_PATH="$GECKODRIVER_BIN" SMOKE_PROFILE_ROOT="$PROFILE_ROOT" timeout --kill-after=10s 45s bundle exec ruby -e '
+  require "fileutils"
+  require "selenium-webdriver"
+  profile_root = ENV.fetch("SMOKE_PROFILE_ROOT")
+  driver = nil
+  cleanup = proc do
+    driver&.quit
+  rescue StandardError
+  ensure
+    # The shell wrapper removes this exact profile after child processes exit.
+  end
+  at_exit(&cleanup)
+  %w[INT TERM].each { |signal| trap(signal) { exit 1 } }
+
+  options = Selenium::WebDriver::Firefox::Options.new
+  options.add_argument("--headless")
+  options.add_argument("--width=1920")
+  options.add_argument("--height=1080")
+  options.add_argument("--profile=#{profile_root}")
+  options.add_preference("general.useragent.override", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0")
+  options.binary = ENV.fetch("FIREFOX_PATH")
+  service = Selenium::WebDriver::Service.firefox(path: ENV.fetch("GECKODRIVER_PATH"))
+  driver = Selenium::WebDriver.for(:firefox, options: options, service: service)
+  driver.manage.timeouts.page_load = 15
+  driver.manage.timeouts.script_timeout = 10
+  driver.navigate.to("data:text/html,<title>ShowScraper smoke test</title>")
+  abort "unexpected browser response" unless driver.title == "ShowScraper smoke test"
+  puts "Selenium smoke test passed."
+'; then
+  fail "Firefox/Selenium could not launch with FIREFOX_PATH=$FIREFOX_BIN and GECKODRIVER_PATH=$GECKODRIVER_BIN. Check the Firefox/geckodriver output above, install missing shared libraries, then rerun bin/setup_sprite."
+fi

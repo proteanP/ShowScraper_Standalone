@@ -28,17 +28,18 @@ class OneOhOneFiveFolsom
       html = URI.open(MAIN_URL, "User-Agent" => "Mozilla/5.0").read
       doc = Nokogiri::HTML(html)
 
-      doc.css(".nectar-hor-list-item").filter_map do |node|
-        columns = node.css(".nectar-list-item").first(3).map { |item| normalize_text(item.text) }
-        date_text, title, billing = columns
-        next if date_text.blank? || title.blank?
+      doc.css("article.calendar-row").filter_map do |node|
+        date = node.at_css("time[datetime]")&.[]("datetime")
+        title = normalize_text(node.at_css(".calendar-event-link")&.text)
+        billing = normalize_text(node.at_xpath("./span")&.text)
+        next if date.blank? || title.blank?
 
         {
-          date: parse_official_date(date_text),
+          date: Date.iso8601(date),
           title: [title, billing].reject(&:blank?).join(" - "),
-          url: node.at_css("a.nectar-list-item-btn")&.[]("href").presence || MAIN_URL
+          url: URI.join(MAIN_URL, node.at_css(".calendar-event-link")&.[]("href") || MAIN_URL).to_s
         }
-      end
+      end.uniq { |event| event.fetch(:url) }
     end
 
     def fetch_ticketmaster_event_times
@@ -109,13 +110,6 @@ class OneOhOneFiveFolsom
       year, month, day = date.split("-").map(&:to_i)
       hour, minute = time.to_s.split(":").first(2).map(&:to_i)
       local_time(year, month, day, hour, minute).to_datetime
-    end
-
-    def parse_official_date(value)
-      date_text = value.gsub(/(\d+)(st|nd|rd|th)\b/i, "\\1")
-      parsed = Date.parse("#{date_text} #{Date.current.in_time_zone(TIME_ZONE).year}")
-      today = Date.current.in_time_zone(TIME_ZONE).to_date
-      parsed < today ? parsed.next_year : parsed
     end
 
     def local_time(year, month, day, hour, minute)

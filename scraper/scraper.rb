@@ -218,7 +218,8 @@ class Scraper
         options.binary = ENV["FIREFOX_PATH"]
       end
 
-      service = Selenium::WebDriver::Service.firefox(path: ENV.fetch("GECKODRIVER_PATH", "/usr/local/bin/geckodriver"))
+      geckodriver_path = ENV["GECKODRIVER_PATH"].presence || "/usr/local/bin/geckodriver"
+      service = Selenium::WebDriver::Service.firefox(path: geckodriver_path)
       driver = Selenium::WebDriver.for :firefox, options: options, service: service
 
       # Anti-bot fingerprinting - mask webdriver detection

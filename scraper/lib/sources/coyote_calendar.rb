@@ -38,12 +38,14 @@ class CoyoteCalendar
       doc = Nokogiri::HTML(post.content_encoded)
       # Each day has a banner image followed by that day's list. Calendar posts
       # are written chronologically, so the post title supplies the actual dates.
-      doc.css("img.kg-image").each_with_index.filter_map do |image, index|
-        date = start_date + index
-        break if date > end_date
+      sections = doc.css("img.kg-image").filter_map do |image|
         section = image.parent.next_element
-        next unless section&.name == "ul"
-        [date, section, image["src"]]
+        [section, image["src"]] if section&.name == "ul"
+      end
+
+      sections.take((end_date - start_date).to_i + 1).each_with_index.filter_map do |(section, image), index|
+        date = start_date + index
+        [date, section, image]
       end
     end
 

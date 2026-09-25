@@ -2,7 +2,7 @@ class MakeOutRoom
 
   # Calendar view, but without images or detail pages.
   # The calendar is rendered in an iframe, which we must access directly
-  MAIN_URL = "https://www.calendarwiz.com/calendars/calendar.php?crd=makeoutroom"
+  MAIN_URL = "https://www.calendarwiz.com/calendars/calendar.php?crd=makeoutroom&jsenabled=1&winh=720&winw=1280&inifr=false"
 
   cattr_accessor :months_limit, :events_limit, :load_time
   self.months_limit = 3
@@ -35,7 +35,11 @@ class MakeOutRoom
     end
 
     def get_next_page
-      $driver.css("[title='Go to next month']")[0].click
+      next_page = $driver.css("[title='Go to next month']").first ||
+        $driver.css("a[href*='op=cal'][href*='month=']").first
+      raise "Make Out Room next-month link was not found" unless next_page
+
+      $driver.get(next_page.attribute("href"))
     end
 
     def parse_event_data(event, &foreach_event_blk)

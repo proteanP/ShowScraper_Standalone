@@ -30,7 +30,10 @@ class PerisTavern
     end
 
     def events_url
-      site_id = calendar_content[/var SiteID = "([^"]+)"/, 1]
+      $driver.get(CALENDAR_URL)
+      sleep 2
+      site_id = $driver.css("iframe#MyEventWrapper").first&.attribute("src")&.
+        match(/[?&]siteid=([^&]+)/)&.captures&.first
       raise "Peri's Tavern ticket site ID was not found" unless site_id
 
       loader = URI.open(
@@ -41,12 +44,6 @@ class PerisTavern
       raise "Peri's Tavern ticket session was not found" unless session_id
 
       "#{PLUGIN_URL}?ViewType=grid&EventType=current&day=&s=#{session_id}"
-    end
-
-    def calendar_content
-      JSON.parse(
-        URI.open("#{SITE_URL}wp-json/wp/v2/pages?slug=music-calendar", "User-Agent" => "Mozilla/5.0").read
-      ).first.dig("content", "rendered")
     end
 
     def parse_event_data(event, &foreach_event_blk)

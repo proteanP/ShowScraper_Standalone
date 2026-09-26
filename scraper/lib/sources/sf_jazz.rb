@@ -1,14 +1,14 @@
 require "faraday"
+require "json"
+require "nokogiri"
 require "uri"
 
 class SfJazz
-  MAIN_URL = "https://www.sfjazz.org/calendar/"
-  MIRROR_PREFIX = "https://r.jina.ai/http://"
+  # SFJAZZ's calendar is Cloudflare-blocked from this runtime. Outgoing's
+  # server-rendered SFJAZZ listing is the approved aggregator fallback.
+  MAIN_URL = "https://www.outgoing.world/activity/sfjazz-47d3f4ff1bb8"
   DEFAULT_IMG = "https://ybgfestival.org/wp-content/uploads/2014/03/sfjazz-logo-21-300x300-300x300.jpg"
-  CALENDAR_MONTHS_AHEAD = 12
-  MIRROR_RETRY_STATUSES = [429, 500, 502, 503, 504].freeze
-  MIRROR_MAX_ATTEMPTS = 3
-  MIRROR_WORKERS = 4
+  OUTGOING_PROVENANCE = "Listed by Outgoing (SFJAZZ calendar fallback)."
 
   cattr_accessor :events_limit
   self.events_limit = 200
@@ -23,43 +23,54 @@ class SfJazz
     private
 
     def fetch_events
-      fetch_calendar_markdowns.flat_map { |markdown| extract_calendar_events(markdown) }.
-        select { |event| event[:date].to_date >= Date.today }.
-        sort_by { |event| event[:date] }.
-        uniq { |event| [event[:url], event[:date], event[:title]] }
+      response = Faraday.get(MAIN_URL) do |req|
+        req.options.timeout = 30
+        req.options.open_timeout = 10
+      end
+      raise "SfJazz Outgoing request returned #{response.status}" unless response.success?
+
+      document = Nokogiri::HTML(response.body)
+      events = outgoing_events(document)
+      official_urls = outgoing_official_urls(document)
+
+      events.each_with_index.filter_map do |event, index|
+        date = DateTime.parse(event.fetch("startDate"))
+        next if date.to_date < Date.today
+
+        {
+          url: official_urls[index].presence || event.fetch("url"),
+          img: event["image"].presence || DEFAULT_IMG,
+          date: date,
+          title: event.fetch("name"),
+          details: [OUTGOING_PROVENANCE, event["description"]].compact.join(" ")
+        }
+      rescue ArgumentError, KeyError
+        nil
+      end.uniq { |event| [event[:url], event[:date], event[:title]] }.sort_by { |event| event[:date] }
     rescue Faraday::Error => e
-      raise "SfJazz mirror request failed: #{e.message}"
+      raise "SfJazz Outgoing request failed: #{e.message}"
     end
 
-    def fetch_calendar_markdowns
-      urls = calendar_urls
-      results = Array.new(urls.length)
-      errors = Queue.new
-      jobs = Queue.new
-      urls.each_with_index { |url, index| jobs << [index, url] }
+    def outgoing_events(document)
+      script = document.at_css("script#activity-jsonld")
+      raise "SfJazz Outgoing listing did not contain event data" unless script
 
-      [MIRROR_WORKERS, urls.length].min.times.map do
-        Thread.new do
-          loop do
-            index, url = jobs.pop(true)
-            results[index] = fetch_markdown(url)
-          rescue ThreadError
-            break
-          rescue => e
-            errors << e
-            break
-          end
-        end
-      end.each(&:join)
-
-      raise errors.pop unless errors.empty?
-
-      results.compact
+      JSON.parse(script.text).fetch("@graph").select { |item| item["@type"] == "Event" }
+    rescue JSON::ParserError, KeyError => e
+      raise "SfJazz Outgoing event data could not be parsed: #{e.message}"
     end
 
-    def calendar_urls
-      ([Date.today] + (1..CALENDAR_MONTHS_AHEAD).map { |month| Date.today.next_month(month).beginning_of_month }).
-        map { |date| "#{MAIN_URL}?date=#{date.iso8601}&layout=A" }
+    def outgoing_official_urls(document)
+      document.css("script").filter_map do |script|
+        payload = script.text[/self\.__next_f\.push\((.*)\)\z/m, 1]
+        JSON.parse(payload)[1] if payload
+      rescue JSON::ParserError
+        nil
+      end.join.scan(/"direct_booking_urls":(\[[^\]]*\])/).map do |urls|
+        JSON.parse(urls.first).find { |url| URI(url).host == "www.sfjazz.org" }
+      rescue JSON::ParserError, URI::InvalidURIError
+        nil
+      end
     end
 
     def parse_event_data(event, &foreach_event_blk)
@@ -67,8 +78,8 @@ class SfJazz
       return if title.blank?
 
       {
-        url: absolutize_url(event[:url].presence || MAIN_URL),
-        img: absolutize_url(event[:img].presence || DEFAULT_IMG),
+        url: event[:url],
+        img: event[:img],
         date: event[:date],
         title: title.gsub(/\s{2,}/, " "),
         details: event[:details].to_s.strip
@@ -77,75 +88,6 @@ class SfJazz
         tap { |data| foreach_event_blk&.call(data) }
     rescue => e
       ENV["DEBUGGER"] == "true" ? binding.pry : raise
-    end
-
-    def fetch_markdown(url)
-      response = nil
-      MIRROR_MAX_ATTEMPTS.times do |attempt|
-        response = Faraday.get("#{MIRROR_PREFIX}#{url}") do |req|
-          req.options.timeout = 20
-          req.options.open_timeout = 10
-          req.headers["accept"] = "text/plain, text/markdown;q=0.9, */*;q=0.8"
-        end
-
-        break if response.success? || !MIRROR_RETRY_STATUSES.include?(response.status)
-
-        sleep(2**attempt)
-      end
-
-      unless response.success?
-        raise "SfJazz mirror returned #{response.status} for #{url}"
-      end
-
-      response.body
-    end
-
-    def extract_calendar_events(markdown)
-      current_date = nil
-      current_title = nil
-      year = Date.today.year
-
-      markdown.lines.map(&:strip).filter_map do |line|
-        date_text = line[/\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+[A-Z][a-z]{2}\s+\d{1,2}\b/]
-        if date_text.present?
-          current_date = DateTime.parse("#{date_text} #{year}")
-          current_date = current_date.next_year if current_date.to_date < Date.today - 31
-          current_title = line[%r{#### \[([^\]]+)\]\(https://www\.sfjazz\.org/[^)]+\)}, 1]
-          next
-        end
-
-        match = line.match(%r{\[!\[Image \d+(?:: [^\]]+)?\]\((https://www\.sfjazz\.org/media/[^)]+)\)\]\((https://www\.sfjazz\.org/[^)]+)\)})
-        next unless match && current_date
-
-        img, url = match.captures
-        {
-          url: url,
-          img: img,
-          date: current_date,
-          title: current_title.presence || title_from_url(url),
-          details: details_from_url(url)
-        }
-      end
-    end
-
-    def title_from_url(url)
-      slug = URI(url).path.split("/").reject(&:blank?).last.to_s
-      slug.tr("-", " ").squish.titleize
-    rescue
-      "SFJAZZ Event"
-    end
-
-    def details_from_url(url)
-      return "At Home" if url.include?("/athome/")
-      return "Education" if url.include?("/education/")
-
-      ""
-    end
-
-    def absolutize_url(url)
-      URI.join(MAIN_URL, url).to_s
-    rescue
-      url
     end
   end
 end

@@ -82,7 +82,7 @@ GEM
       signet (>= 0.16, < 2.a)
     i18n (1.15.2)
       concurrent-ruby (~> 1.0)
-    json (3.0.2)
+    json (2.21.2)
     jwt (3.2.0)
       base64
     logger (1.7.0)
@@ -163,6 +163,7 @@ DEPENDENCIES
   dotenv
   ffi
   google-cloud-storage
+  json (< 3.0)
   nokogiri
   pry
   pry-nav

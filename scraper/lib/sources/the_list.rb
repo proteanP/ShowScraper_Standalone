@@ -128,6 +128,8 @@ class TheList
         "Music City Starfactory",
         "Music City Underground",
         "Sweetwater Music Hall",
+        "142 Throckmorton",
+        "Throckmorton Theatre",
         "Rancho Nicasio",
         "Mac's at 19 Broadway",
         "Peri's Tavern",

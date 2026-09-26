@@ -476,7 +476,7 @@
       "region": "San Francisco",
       "mapLink": "",
       "latlng": "37.77714742893529, -122.42107310055866",
-      "desc": "This nightspot presents a line-up of internationally renowned jazz performers live on stage.",
+      "desc": "This nightspot presents a line-up of internationally renowned jazz performers live on stage. Calendar listings are collected from Outgoing as an approved fallback when SFJAZZ blocks automated calendar access.",
       "img": "https://ybgfestival.org/wp-content/uploads/2014/03/sfjazz-logo-21-300x300-300x300.jpg"
     },
     {

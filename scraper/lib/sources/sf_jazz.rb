@@ -7,8 +7,11 @@ class SfJazz
   # SFJAZZ's calendar is Cloudflare-blocked from this runtime. Outgoing's
   # server-rendered SFJAZZ listing is the approved aggregator fallback.
   MAIN_URL = "https://www.outgoing.world/activity/sfjazz-47d3f4ff1bb8"
+  OFFICIAL_CALENDAR_URL = "https://www.sfjazz.org/calendar/"
+  JINA_PREFIX = "https://r.jina.ai/http://"
   DEFAULT_IMG = "https://ybgfestival.org/wp-content/uploads/2014/03/sfjazz-logo-21-300x300-300x300.jpg"
   OUTGOING_PROVENANCE = "Listed by Outgoing (SFJAZZ calendar fallback)."
+  JINA_PROVENANCE = "Listed by the SFJAZZ calendar via Jina Reader."
 
   cattr_accessor :events_limit
   self.events_limit = 200
@@ -27,7 +30,7 @@ class SfJazz
         req.options.timeout = 30
         req.options.open_timeout = 10
       end
-      raise "SfJazz Outgoing request returned #{response.status}" unless response.success?
+      return official_calendar_events unless response.success?
 
       document = Nokogiri::HTML(response.body)
       events = outgoing_events(document)
@@ -48,7 +51,45 @@ class SfJazz
         nil
       end.uniq { |event| [event[:url], event[:date], event[:title]] }.sort_by { |event| event[:date] }
     rescue Faraday::Error => e
-      raise "SfJazz Outgoing request failed: #{e.message}"
+      official_calendar_events
+    end
+
+    def official_calendar_events
+      url = "#{JINA_PREFIX}#{OFFICIAL_CALENDAR_URL}?date=#{Date.today.iso8601}&layout=A"
+      response = Faraday.get(url) do |req|
+        req.options.timeout = 30
+        req.options.open_timeout = 10
+      end
+      raise "SfJazz official calendar fallback returned #{response.status}" unless response.success?
+
+      events = []
+      current_date = nil
+      response.body.lines.map(&:strip).each_with_index do |line, index|
+        if (match = line.match(/^([A-Z]{3}) (\d{1,2})(?:[–-](\d{1,2}))?, (\d{4})$/))
+          month, start_day, end_day, year = match.captures
+          current_date = DateTime.parse("#{month} #{end_day || start_day}, #{year}")
+          next
+        end
+
+        match = line.match(%r{^\[([^\]]+)\]\((https://www\.sfjazz\.org/tickets/productions/[^)]+)\)$})
+        next unless match && current_date && current_date.to_date >= Date.today
+        next if match[1] == "Buy Tickets"
+
+        image = response.body.lines[index, 8].to_a.join[/!\[[^\]]*\]\((https:\/\/www\.sfjazz\.org\/media\/[^)]+)\)/, 1]
+        events << {
+          url: match[2],
+          img: image.presence || DEFAULT_IMG,
+          date: current_date,
+          title: match[1],
+          details: JINA_PROVENANCE
+        }
+      end
+
+      raise "SfJazz official calendar fallback did not contain upcoming events" if events.empty?
+
+      events.uniq { |event| [event[:url], event[:date], event[:title]] }.sort_by { |event| event[:date] }
+    rescue Faraday::Error => e
+      raise "SfJazz official calendar fallback request failed: #{e.message}"
     end
 
     def outgoing_events(document)

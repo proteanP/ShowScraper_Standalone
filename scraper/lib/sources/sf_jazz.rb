@@ -1,17 +1,15 @@
 require "faraday"
 require "json"
-require "nokogiri"
 require "uri"
 
 class SfJazz
-  # SFJAZZ's calendar is Cloudflare-blocked from this runtime. Outgoing's
-  # server-rendered SFJAZZ listing is the approved aggregator fallback.
-  MAIN_URL = "https://www.outgoing.world/activity/sfjazz-47d3f4ff1bb8"
-  OFFICIAL_CALENDAR_URL = "https://www.sfjazz.org/calendar/"
+  # The public calendar is Cloudflare-blocked from this runtime. Its calendar
+  # app reads this first-party API, which Jina Reader can retrieve in full.
+  OFFICIAL_SITE_URL = "https://www.sfjazz.org"
+  OFFICIAL_CALENDAR_API_URL = "#{OFFICIAL_SITE_URL}/ace-api/events/"
   JINA_PREFIX = "https://r.jina.ai/http://"
   DEFAULT_IMG = "https://ybgfestival.org/wp-content/uploads/2014/03/sfjazz-logo-21-300x300-300x300.jpg"
-  OUTGOING_PROVENANCE = "Listed by Outgoing (SFJAZZ calendar fallback)."
-  JINA_PROVENANCE = "Listed by the SFJAZZ calendar via Jina Reader."
+  CALENDAR_PROVENANCE = "Listed by the SFJAZZ calendar API via Jina Reader."
 
   cattr_accessor :events_limit
   self.events_limit = 200
@@ -26,94 +24,48 @@ class SfJazz
     private
 
     def fetch_events
-      response = Faraday.get(MAIN_URL) do |req|
-        req.options.timeout = 30
-        req.options.open_timeout = 10
-      end
-      return official_calendar_events unless response.success?
-
-      document = Nokogiri::HTML(response.body)
-      events = outgoing_events(document)
-      official_urls = outgoing_official_urls(document)
-
-      events.each_with_index.filter_map do |event, index|
-        date = DateTime.parse(event.fetch("startDate"))
-        next if date.to_date < Date.today
-
-        {
-          url: official_urls[index].presence || event.fetch("url"),
-          img: event["image"].presence || DEFAULT_IMG,
-          date: date,
-          title: event.fetch("name"),
-          details: [OUTGOING_PROVENANCE, event["description"]].compact.join(" ")
-        }
-      rescue ArgumentError, KeyError
-        nil
-      end.uniq { |event| [event[:url], event[:date], event[:title]] }.sort_by { |event| event[:date] }
-    rescue Faraday::Error => e
-      official_calendar_events
-    end
-
-    def official_calendar_events
-      # The date/layout route is Cloudflare-challenged through Jina Reader,
-      # while the month route retains the official calendar's featured events.
-      url = "#{JINA_PREFIX}#{OFFICIAL_CALENDAR_URL}?month=#{Date.today.strftime('%-m.%Y')}"
+      start_date = Date.today
+      query = URI.encode_www_form(
+        startDate: start_date.iso8601,
+        endDate: (start_date >> 12).iso8601
+      )
+      # Jina Reader treats an unescaped ampersand as its own query separator.
+      url = "#{JINA_PREFIX}#{OFFICIAL_CALENDAR_API_URL.delete_prefix('https://')}?#{query.gsub('&', '%26')}"
       response = Faraday.get(url) do |req|
         req.options.timeout = 30
         req.options.open_timeout = 10
       end
-      raise "SfJazz official calendar fallback returned #{response.status}" unless response.success?
+      raise "SfJazz official calendar API returned #{response.status}" unless response.success?
 
-      events = []
-      current_date = nil
-      response.body.lines.map(&:strip).each_with_index do |line, index|
-        if (match = line.match(/^([A-Z]{3}) (\d{1,2})(?:[–-](\d{1,2}))?, (\d{4})$/))
-          month, start_day, end_day, year = match.captures
-          current_date = DateTime.parse("#{month} #{end_day || start_day}, #{year}")
-          next
-        end
+      events = calendar_events(response.body).filter_map do |event|
+        date = DateTime.parse(event.fetch("eventDate"))
+        detail_path = event.fetch("viewDetailCtaUrl")
+        next if date.to_date < start_date || !detail_path.start_with?("/tickets/productions/")
 
-        match = line.match(%r{^\[([^\]]+)\]\((https://www\.sfjazz\.org/tickets/productions/[^)]+)\)$})
-        next unless match && current_date && current_date.to_date >= Date.today
-        next if match[1] == "Buy Tickets"
-
-        image = response.body.lines[index, 8].to_a.join[/!\[[^\]]*\]\((https:\/\/www\.sfjazz\.org\/media\/[^)]+)\)/, 1]
-        events << {
-          url: match[2],
-          img: image.presence || DEFAULT_IMG,
-          date: current_date,
-          title: match[1],
-          details: JINA_PROVENANCE
+        {
+          url: URI.join(OFFICIAL_SITE_URL, detail_path).to_s,
+          img: event["thumbnail"].presence ? URI.join(OFFICIAL_SITE_URL, event["thumbnail"]).to_s : DEFAULT_IMG,
+          date: date,
+          title: event.fetch("name"),
+          details: CALENDAR_PROVENANCE
         }
+      rescue ArgumentError, KeyError, URI::InvalidURIError
+        nil
       end
 
-      raise "SfJazz official calendar fallback did not contain upcoming events" if events.empty?
+      raise "SfJazz official calendar API did not contain upcoming events" if events.empty?
 
       events.uniq { |event| [event[:url], event[:date], event[:title]] }.sort_by { |event| event[:date] }
-    rescue Faraday::Error => e
-      raise "SfJazz official calendar fallback request failed: #{e.message}"
+    rescue Faraday::Error, JSON::ParserError => e
+      raise "SfJazz official calendar API request failed: #{e.message}"
     end
 
-    def outgoing_events(document)
-      script = document.at_css("script#activity-jsonld")
-      raise "SfJazz Outgoing listing did not contain event data" unless script
+    def calendar_events(response_body)
+      start_index = response_body.index("[{")
+      end_index = response_body.rindex("}]")
+      raise JSON::ParserError, "SfJazz calendar API did not return an event array" unless start_index && end_index
 
-      JSON.parse(script.text).fetch("@graph").select { |item| item["@type"] == "Event" }
-    rescue JSON::ParserError, KeyError => e
-      raise "SfJazz Outgoing event data could not be parsed: #{e.message}"
-    end
-
-    def outgoing_official_urls(document)
-      document.css("script").filter_map do |script|
-        payload = script.text[/self\.__next_f\.push\((.*)\)\z/m, 1]
-        JSON.parse(payload)[1] if payload
-      rescue JSON::ParserError
-        nil
-      end.join.scan(/"direct_booking_urls":(\[[^\]]*\])/).map do |urls|
-        JSON.parse(urls.first).find { |url| URI(url).host == "www.sfjazz.org" }
-      rescue JSON::ParserError, URI::InvalidURIError
-        nil
-      end
+      JSON.parse(response_body[start_index..end_index + 1])
     end
 
     def parse_event_data(event, &foreach_event_blk)

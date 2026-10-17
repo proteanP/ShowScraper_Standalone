@@ -55,7 +55,9 @@ class SfJazz
     end
 
     def official_calendar_events
-      url = "#{JINA_PREFIX}#{OFFICIAL_CALENDAR_URL}?date=#{Date.today.iso8601}&layout=A"
+      # The date/layout route is Cloudflare-challenged through Jina Reader,
+      # while the month route retains the official calendar's featured events.
+      url = "#{JINA_PREFIX}#{OFFICIAL_CALENDAR_URL}?month=#{Date.today.strftime('%-m.%Y')}"
       response = Faraday.get(url) do |req|
         req.options.timeout = 30
         req.options.open_timeout = 10

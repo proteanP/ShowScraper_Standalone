@@ -18,7 +18,7 @@ gem 'ffi'
 gem 'google-cloud-storage'
 # google-apis-core currently uses MultiJson, whose JSON adapter passes parse options
 # positionally. json 3.0 accepts only keyword options, so keep the compatible major.
-gem 'json', '< 3.0'
+gem 'json', '< 4.0'
 
 # db stuff
 #gem "sinatra-activerecord"

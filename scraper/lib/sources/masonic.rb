@@ -1,20 +1,13 @@
-class Masonic
-  # "Load more" type site
-  # However they have aggressive bot detection.
-  # So we just parse super minimal info here.
+require "open-uri"
+require "nokogiri"
 
-  cattr_accessor :pages_limit, :events_limit
-  self.pages_limit = 5
+class Masonic
+  cattr_accessor :events_limit
   self.events_limit = 200
 
   MAIN_URL = "https://www.livenation.com/venue/KovZpZAJ6nlA/the-masonic-events"
-  EVENTS_WAIT_TIMEOUT = 15
 
   def self.run(events_limit: self.events_limit, &foreach_event_blk)
-    $driver.navigate.to(MAIN_URL)
-    get_all_pages
-    wait_for_events
-
     get_events.map.with_index do |event, index|
       next if index >= events_limit
       parse_event_data(event, &foreach_event_blk)
@@ -25,47 +18,20 @@ class Masonic
     private
 
     def get_events
-      events = $driver.css("[role='tabpanel'] div[role='group']")
-      events = $driver.css("div[role='group']") if events.empty?
-
-      events.select do |box|
-        box.css("time").present? && box.css("h2, .chakra-heading").present?
+      document = Nokogiri::HTML(URI.open(MAIN_URL))
+      document.css("[role='group']").select do |box|
+        box.at_css("time[datetime]") && box.at_css("h2, .chakra-heading")
       end
-    end
-
-    def get_all_pages
-      # ewww gross iframe
-      $driver.execute_script 'document.querySelectorAll("iframe").forEach((iframe) => iframe.remove())'
-
-      # And google ads ... livenation, everyone
-      $driver.execute_script 'document.querySelectorAll("#adhesion-ad").forEach((iframe) => iframe.remove())'
-
-      while load_more = $driver.css(".show-more")[0]
-        load_more.click
-        sleep 1
-      end
-      $driver.execute_script("window.scrollBy(0,document.body.scrollHeight)")
-    end
-
-    def wait_for_events
-      wait = Selenium::WebDriver::Wait.new(timeout: EVENTS_WAIT_TIMEOUT)
-      wait.until { get_events.any? }
-    rescue Selenium::WebDriver::Error::TimeoutError
-      nil
     end
 
     def parse_event_data(event, &foreach_event_blk)
-      time = event.css("time")[0]
-      return unless time
-
-      date = DateTime.parse(time.attribute("datetime")) rescue nil
+      date = DateTime.parse(event.at_css("time[datetime]")["datetime"].split("/").first) rescue nil
       return if date.blank?
 
-      title = event.css("h2")[0]&.text&.strip
-      title = event.css(".chakra-heading")[0]&.text&.strip if title.blank?
+      title = event.at_css("h2, .chakra-heading")&.text&.strip
       return if title.blank?
 
-      link = event.css("a")[0]&.attribute("href")
+      link = event.at_css("a[href]")&.[]("href")
       link = MAIN_URL if link.blank?
 
       {
@@ -82,16 +48,10 @@ class Masonic
     end
 
     def parse_img(event)
-      # Some wierd shit. The images don't load until you scroll to them.
-      # But there's a workaround.
-      img = event.css("img")[0]&.attribute("src").to_s
+      img = event.at_css("img")&.[]("src").to_s
       return "" if img.blank?
 
-      if img.include?("data")
-        src_set = event.attribute("outerHTML").scan(/srcSet="([^"]+)"/)[0]&.first
-        img = src_set.to_s.split(",")[6].to_s.lstrip
-      end
-      img
+      URI.join(MAIN_URL, img).to_s
     rescue
       ""
     end

@@ -1,13 +1,13 @@
+require "open-uri"
+require "nokogiri"
+
 class CafeDuNord
-  # Single page!!
   MAIN_URL = "https://cafedunord.com/"
 
-  cattr_accessor :events_limit, :load_time
+  cattr_accessor :events_limit
   self.events_limit = 200
-  self.load_time = 3
 
   def self.run(events_limit: self.events_limit, &foreach_event_blk)
-    $driver.get(MAIN_URL)
     get_events.map.with_index do |event, index|
       next if index >= events_limit
       parse_event_data(event, &foreach_event_blk)
@@ -18,15 +18,27 @@ class CafeDuNord
     private
 
     def get_events
-      $driver.css(".tw-section")
+      document = Nokogiri::HTML(URI.open(MAIN_URL))
+      document.css("section.tonight-card[data-date], li.show-row[data-date]").select do |event|
+        event.at_css(".room-tag--cdn")
+      end
     end
 
     def parse_event_data(event, &foreach_event_blk)
+      title = event.at_css(".tonight-card__headliner, .show-row__headliner")&.text&.strip
+      return if title.blank?
+
+      date = DateTime.parse(event.at_css("time[datetime]")["datetime"]) rescue nil
+      return if date.blank?
+
+      url = event.at_css(".tonight-card__headliner a, .show-row__headliner a")&.[]("href")
+      return if url.blank?
+
       {
-        date: parse_date(event),
-        img: event.css(".tw-image img")[0].attribute("src"),
-        title: parse_title(event),
-        url: event.css(".tw-image a")[0].attribute("href"),
+        date: date,
+        img: event.at_css("img")&.[]("src").to_s,
+        title: title,
+        url: URI.join(MAIN_URL, url).to_s,
         details: ""
       }.
         tap { |data| Utils.print_event_preview(self, data) }.
@@ -35,16 +47,5 @@ class CafeDuNord
       ENV["DEBUGGER"] == "true" ? binding.pry : raise
     end
 
-    def parse_title(event)
-      headliner = event.css(".tw-name")[0].text
-      support = event.css(".support")[0]&.text
-      [headliner, support].compact.join(", ").gsub("\n", ", ")
-    end
-
-    def parse_date(event)
-      # TODO no year
-      month, day = event.css(".tw-event-date")[0].text.split(".")
-      DateTime.parse("#{month}/#{day}")
-    end
   end
 end

@@ -17,7 +17,7 @@ class BandcampOakland
     private
 
     def get_events
-      $driver.css("[data-testid='StyledContainer']")
+      $driver.css("[data-testid='NewLinkContainer'] a[data-testid='LinkClickTriggerLink']")
     end
 
     def parse_event_data(event, &foreach_event_blk)
@@ -26,8 +26,7 @@ class BandcampOakland
         date: Date.strptime(text.match(/\((.*?)\)/)[1], "%m/%d"),
         img: nil,
         title: text.match(/\) (.*)/)[1],
-        # url: event.css(".detail_seetickets_image a")[0].attribute("href"),
-        url: event.css("a")[0].attribute("href"),
+        url: event.attribute("href"),
         details: ""
       }.
         tap { |data| Utils.print_event_preview(self, data) }.

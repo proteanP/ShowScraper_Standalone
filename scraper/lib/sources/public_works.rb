@@ -1,10 +1,5 @@
-require "json"
-require "nokogiri"
-require "open-uri"
-
 class PublicWorks
   MAIN_URL = "https://publicsf.com/calendar/"
-  API_URL = "https://publicsf.com/wp-json/wp/v2/pages/2515"
   TIME_ZONE = "America/Los_Angeles"
 
   cattr_accessor :events_limit
@@ -26,25 +21,21 @@ class PublicWorks
     private
 
     def get_events
-      response = URI.open(API_URL).read
-      page = JSON.parse(response)
-      html = page.dig("content", "rendered").to_s
-      Nokogiri::HTML.fragment(html).css(".event-item")
-    rescue JSON::ParserError => e
-      raise "PublicWorks invalid JSON response: #{e.message}"
+      $driver.navigate.to(MAIN_URL)
+      $driver.css(".event-item")
     end
 
     def parse_event_data(event, &foreach_event_blk)
-      title = event.at_css(".event-title")&.text.to_s.squish
-      date_text = event.at_css(".event-date")&.text.to_s.squish
+      title = event.css(".event-title")[0]&.text.to_s.squish
+      date_text = event.css(".event-date")[0]&.text.to_s.squish
       return if title.blank? || date_text.blank?
 
       {
         date: parse_date(date_text),
-        url: normalize_url(event.at_css("a[href]")&.[]("href")),
+        url: normalize_url(event.css("a[href]")[0]&.attribute("href")),
         title: title,
         details: "",
-        img: normalize_url(event.at_css(".event-thumb img[src]")&.[]("src"))
+        img: normalize_url(event.css(".event-thumb img[src]")[0]&.attribute("src"))
       }.
         tap { |data| Utils.print_event_preview(self, data) }.
         tap { |data| foreach_event_blk&.call(data) }

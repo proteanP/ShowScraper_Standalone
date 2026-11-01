@@ -2,6 +2,10 @@ require 'json'
 require 'open-uri'
 
 class MusicCitySanFrancisco
+  # Rebranded as Music City Starfactory; musiccitysf.com no longer lists events and
+  # the Eventbrite organizer page shows "Nothing planned right now".
+  DISABLED = true
+
   ORGANIZER_EVENTS_URL = "https://www.eventbrite.com/api/v3/organizers/12803819712/events/"
   EVENTBRITE_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
 

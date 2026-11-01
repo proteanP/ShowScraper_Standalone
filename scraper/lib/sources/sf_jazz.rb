@@ -30,7 +30,7 @@ class SfJazz
         req.options.timeout = 30
         req.options.open_timeout = 10
       end
-      return official_calendar_events unless response.success?
+      return jina_outgoing_events unless response.success?
 
       document = Nokogiri::HTML(response.body)
       events = outgoing_events(document)
@@ -50,6 +50,38 @@ class SfJazz
       rescue ArgumentError, KeyError
         nil
       end.uniq { |event| [event[:url], event[:date], event[:title]] }.sort_by { |event| event[:date] }
+    rescue Faraday::Error => e
+      jina_outgoing_events
+    end
+
+    def jina_outgoing_events
+      response = Faraday.get("#{JINA_PREFIX}#{MAIN_URL}") do |req|
+        req.options.timeout = 30
+        req.options.open_timeout = 10
+      end
+      raise "SfJazz Jina Outgoing fallback returned #{response.status}" unless response.success?
+
+      events = response.body.lines.filter_map do |line|
+        match = line.match(/^\*\s+\[([^\]]+)\]\((https:\/\/www\.outgoing\.world\/activity\/[^)]+)\)\s+—\s+(\S+)/)
+        next unless match
+
+        date = DateTime.parse(match[3])
+        next if date.to_date < Date.today
+
+        {
+          url: match[2],
+          img: DEFAULT_IMG,
+          date: date,
+          title: match[1],
+          details: OUTGOING_PROVENANCE
+        }
+      rescue ArgumentError
+        nil
+      end
+
+      raise "SfJazz Jina Outgoing fallback did not contain upcoming events" if events.empty?
+
+      events.uniq { |event| [event[:url], event[:date], event[:title]] }.sort_by { |event| event[:date] }
     rescue Faraday::Error => e
       official_calendar_events
     end

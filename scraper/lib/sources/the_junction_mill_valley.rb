@@ -9,15 +9,20 @@ class TheJunctionMillValley
   cattr_accessor :events_limit
   self.events_limit = 200
 
+  # True when the page lists only past shows, so an empty result is expected.
+  cattr_accessor :only_past_events
+
   def self.run(events_limit: self.events_limit, &foreach_event_blk)
     doc = Nokogiri::HTML(URI.open(MAIN_URL, "User-Agent" => "Mozilla/5.0").read)
 
-    doc.css("#showlist .list-box:not(.archieved)").each_with_object([]) do |event, events|
+    events = doc.css("#showlist .list-box:not(.archieved)").each_with_object([]) do |event, events|
       break events if events.count >= events_limit
 
       data = parse_event_data(event, &foreach_event_blk)
       events << data if data
     end
+    self.only_past_events = events.empty? && doc.css("#showlist .list-box.archieved").any?
+    events
   end
 
   class << self

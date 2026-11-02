@@ -39,6 +39,7 @@ results, errors = Scraper.run(
 puts "done\n"
 
 warnings = []
+past_only = []
 ignore_empty_warning_sources = %w[
   Zeitgeist
   BandcampOakland
@@ -46,7 +47,12 @@ ignore_empty_warning_sources = %w[
 ]
 
 results.each do |source, events|
-  if events.count == 0 && !ignore_empty_warning_sources.include?(source)
+  next unless events.count == 0 && !ignore_empty_warning_sources.include?(source)
+
+  klass = Object.const_get(source) rescue nil
+  if klass.respond_to?(:only_past_events) && klass.only_past_events
+    past_only << source
+  else
     warnings << source
   end
 end
@@ -67,6 +73,9 @@ if opts[:skip_persist]
 end
 warnings.each do |source|
   log_lines << "#{Time.now.strftime("%m/%d/%Y")}: WARNING: #{source} produced no events"
+end
+past_only.each do |source|
+  log_lines << "#{Time.now.strftime("%m/%d/%Y")}: NOTE: #{source} lists only past events"
 end
 errors.each do |error|
   log_lines << "#{Time.now.strftime("%m/%d/%Y")}: ERROR: #{error[:source]} failed to scrape"

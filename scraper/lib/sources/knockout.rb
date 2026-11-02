@@ -1,69 +1,73 @@
-class Knockout
-	# "Load more" type site
-  MAIN_URL = "https://theknockoutsf.com/calendar2"
-  NEXT_MONTH_SELECTOR = "a[aria-label='Go to next month'], button[aria-label='Go to next month']"
-  DAY_CELL_SELECTOR = "td[role='gridcell'], [role='gridcell']"
-  MONTH_HEADING_SELECTOR = "div[aria-role='heading'], div[role='heading'], [aria-live='polite']"
+require "faraday"
+require "json"
 
-  cattr_accessor :pages_limit, :events_limit
-  self.pages_limit = 5
+class Knockout
+  # Squarespace calendar block; its month feed is public JSON, so no browser needed.
+  MAIN_URL = "https://theknockoutsf.com/calendar2"
+  API_URL = "https://theknockoutsf.com/api/open/GetItemsByMonth"
+  COLLECTION_ID = "668dcda020574371451c8e12"
+  TIME_ZONE = "America/Los_Angeles"
+
+  cattr_accessor :months_limit, :events_limit
+  self.months_limit = 3
   self.events_limit = 200
 
-	def self.run(events_limit: self.events_limit, &foreach_event_blk)
-		index = 0
-		events = []
-		loop do
-			added = []
-			days = get_days(index)
-			days.each do |day_container|
-				new_events = day_container.css(".item-link")
-				added.concat(new_events)
-				new_events.each do |event|
-	        		next if events.count >= events_limit
-					events.push(parse_event_data(day_container, event, &foreach_event_blk))
-				end
-			end
-			break if events.count >= events_limit
-			break if added.empty? || index > pages_limit
-			index += 1
-		end
-		events
-	end
+  def self.run(events_limit: self.events_limit, &foreach_event_blk)
+    events = []
+    today = Time.find_zone!(TIME_ZONE).today
 
-	class << self
-		private
-		def get_days(page_idx)
-			$driver.navigate.to(MAIN_URL)
-			page_idx.times do
-				sleep 1
-				$driver.css(NEXT_MONTH_SELECTOR)[0]&.click
-				sleep 1
-			end
-			$driver.css(DAY_CELL_SELECTOR)
-		end
+    months_limit.times do |offset|
+      fetch_month(today >> offset).each do |event|
+        break if events.count >= events_limit
 
-		def parse_event_data(day_container, event, &foreach_event_blk)
-			month, year = $driver.css(MONTH_HEADING_SELECTOR)[0]&.text.to_s.split(" ")
-			day = day_container.css(".marker-daynum")[0].text
+        data = parse_event_data(event, &foreach_event_blk)
+        events << data if data.present?
+      end
+      break if events.count >= events_limit
+    end
 
-			title = event.css(".item-title")[0]&.text
-			url = event.attribute("href")
-			img = nil
-			$driver.new_tab(url) do
-				img = $driver.css("meta[property='og:image']")[0].attribute("content")
-			end
+    events
+  end
 
-			{
-				date: DateTime.parse("#{month} #{day}, #{year}"),
-				url: url,
-				title: title,
-				img: img,
-				details: "",
-			}.
-				tap { |data| Utils.print_event_preview(self, data) }.
-				tap { |data| foreach_event_blk&.call(data) }
-		rescue => e
-			ENV["DEBUGGER"] == "true" ? binding.pry : raise
-		end
-	end
+  class << self
+    private
+
+    def fetch_month(month)
+      response = Faraday.get(API_URL, { month: month.strftime("%m-%Y"), collectionId: COLLECTION_ID },
+                             { "accept" => "application/json", "referer" => MAIN_URL })
+      raise "Knockout calendar request failed (#{response.status})" unless response.success?
+
+      items = JSON.parse(response.body)
+      # Squarespace answers an unknown collection id with lorem-ipsum sample events.
+      raise "Knockout calendar returned placeholder data; collection id changed?" if items.any? { |e| e["systemDataId"] == "PLACEHOLDER" }
+
+      items.sort_by { |event| event.dig("structuredContent", "startDate").to_i }
+    rescue JSON::ParserError => e
+      raise "Knockout invalid JSON response: #{e.message}"
+    end
+
+    def parse_event_data(event, &foreach_event_blk)
+      title = event["title"].to_s.squish
+      return if title.blank?
+
+      {
+        date: parse_date(event),
+        url: "https://theknockoutsf.com#{event['fullUrl']}",
+        title: title,
+        img: event["assetUrl"].to_s,
+        details: ""
+      }.
+        tap { |data| Utils.print_event_preview(self, data) }.
+        tap { |data| foreach_event_blk&.call(data) }
+    rescue => e
+      ENV["DEBUGGER"] == "true" ? binding.pry : raise
+    end
+
+    def parse_date(event)
+      ms = event.dig("structuredContent", "startDate")
+      raise "Knockout missing event date" if ms.blank?
+
+      Time.find_zone!(TIME_ZONE).at(ms / 1000).to_datetime
+    end
+  end
 end

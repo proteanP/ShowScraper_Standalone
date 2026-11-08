@@ -27,11 +27,12 @@ class PublicWorks
 
     def parse_event_data(event, &foreach_event_blk)
       title = event.css(".event-title")[0]&.text.to_s.squish
-      date_text = event.css(".event-date")[0]&.text.to_s.squish
+      times = event.css(".event-date time")
+      date_text = times[0]&.text.to_s.squish
       return if title.blank? || date_text.blank?
 
       {
-        date: parse_date(date_text),
+        date: parse_date(date_text, times[1]&.attribute("datetime")),
         url: normalize_url(event.css("a[href]")[0]&.attribute("href")),
         title: title,
         details: "",
@@ -43,10 +44,12 @@ class PublicWorks
       ENV["DEBUGGER"] == "true" ? binding.pry : raise
     end
 
-    def parse_date(date_text)
+    def parse_date(date_text, start_time = nil)
       zone = Time.find_zone!(TIME_ZONE)
+      return zone.parse(start_time).to_datetime if start_time.present?
+
       today = zone.today
-      parsed = Date.strptime("#{date_text} #{today.year}", "%b %d %Y")
+      parsed = Date.strptime("#{date_text.sub(/\A\w+,\s*/, "")} #{today.year}", "%b %d %Y")
       parsed = parsed.next_year if parsed < today
       zone.local(parsed.year, parsed.month, parsed.day).to_datetime
     rescue ArgumentError

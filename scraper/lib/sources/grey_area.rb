@@ -21,9 +21,13 @@ class GreyArea
 
     def parse_event_data(event, &foreach_event_blk)
       date = DateTime.parse(event.css(".date")[0].text) rescue return
+      # Dates are listed as "MM/DD" with no year; roll past dates into next year.
+      date = date.next_year if date < DateTime.now - 30
+      title = event.css(".item-title")[0]&.text
+      return if title.blank?
       {
         img: parse_img(event),
-        title: event.css(".item-title")[0].text,
+        title: title,
         url: event.attribute("href"),
         date: date,
         details: ""

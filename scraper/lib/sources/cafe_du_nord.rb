@@ -3,6 +3,7 @@ require "nokogiri"
 
 class CafeDuNord
   MAIN_URL = "https://cafedunord.com/"
+  SHOWS_URL = "https://cafedunord.com/shows"
 
   cattr_accessor :events_limit
   self.events_limit = 200
@@ -18,20 +19,20 @@ class CafeDuNord
     private
 
     def get_events
-      document = Nokogiri::HTML(URI.open(MAIN_URL))
-      document.css("section.tonight-card[data-date], li.show-row[data-date]").select do |event|
+      document = Nokogiri::HTML(URI.open(SHOWS_URL))
+      document.css("li.bill-card[data-date]").select do |event|
         event.at_css(".room-tag--cdn")
       end
     end
 
     def parse_event_data(event, &foreach_event_blk)
-      title = event.at_css(".tonight-card__headliner, .show-row__headliner")&.text&.strip
+      title = event.at_css(".bill-card__name")&.text&.strip
       return if title.blank?
 
-      date = DateTime.parse(event.at_css("time[datetime]")["datetime"]) rescue nil
+      date = DateTime.parse(event.at_css("time.bill-card__date[datetime]")["datetime"]) rescue nil
       return if date.blank?
 
-      url = event.at_css(".tonight-card__headliner a, .show-row__headliner a")&.[]("href")
+      url = event.at_css(".bill-card__name a")&.[]("href")
       return if url.blank?
 
       {

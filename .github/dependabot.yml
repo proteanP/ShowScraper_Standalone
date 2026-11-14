@@ -1,11 +1,19 @@
+# Dependabot: one grouped PR a week per entry for minor and patch updates (group
+# `minor-patch`, which the Fable review gate in proteanP/services-directory may merge);
+# majors and security updates come as their own PRs and wait for Max.
+# See services-directory StackUpdate/README.md.
 version: 2
 updates:
-  - package-ecosystem: "bundler"
-    directory: "/"
+  - package-ecosystem: bundler
+    directory: /
     schedule:
-      interval: "weekly"
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: America/Los_Angeles
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
     groups:
-      ruby-minor-and-patch:
-        update-types:
-          - "minor"
-          - "patch"
+      minor-patch:
+        update-types: [minor, patch]

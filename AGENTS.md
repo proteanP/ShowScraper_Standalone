@@ -136,10 +136,11 @@ Most sources are Selenium-driven DOM parsers, but there are important variants:
 
 - `DnaLounge`: RSS-based (`URI.open` + `RSS::Parser`) to avoid bot friction.
 - `GreatAmericanMusicHall`: static HTML via `Nokogiri.parse(URI.open(...))` because live page load is problematic.
+- `RickshawStop`: static HTML from the venue's SeeTickets/Eventim white-label page (`wl.eventim.us`), because rickshawstop.com returns 403; carries session cookies to page through results.
 - `NewParish` (currently disabled): static fetch + JSON-LD extraction.
 - `MakeOutRoom`: one calendar cell can contain multiple events; parser returns multiple hashes per cell.
 - `Knockout` and `Winters`: open detail pages in temporary tab via `driver.new_tab`.
-- Calendar UI normalization: `RickshawStop` and `StorkClub` resize browser to force a better calendar layout before parsing.
+- Calendar UI normalization: `StorkClub` resizes browser to force a better calendar layout before parsing.
 - Anti-overlay cleanup: some adapters remove cookie/ad overlays via JS (`execute_script`) before interaction (e.g., `Warfield`, `Fillmore`, `Masonic`, `AugustHall`).
 
 ### Class loading and naming

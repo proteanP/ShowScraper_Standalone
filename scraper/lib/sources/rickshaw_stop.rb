@@ -1,43 +1,77 @@
-class RickshawStop
-  # Awesome calendar which shows multiple months at once!
-  MAIN_URL = "https://rickshawstop.com/calendar/"
+require "net/http"
+require "nokogiri"
 
-  cattr_accessor :events_limit, :load_time
+class RickshawStop
+  # rickshawstop.com blocks the scraper (403), so read the venue's own
+  # ticketing white-label page on SeeTickets/Eventim instead.
+  MAIN_URL = "https://wl.eventim.us/RickshawStop"
+  PAGE_SIZE = 12
+
+  cattr_accessor :events_limit
   self.events_limit = 200
-  self.load_time = 3
 
   def self.run(events_limit: self.events_limit, &foreach_event_blk)
-    $driver.get(MAIN_URL)
-    get_events.map.with_index do |(month_node, event), index|
-      next if index >= events_limit
-      parse_event_data(month_node, event, &foreach_event_blk)
+    get_events(events_limit).map do |event|
+      parse_event_data(event, &foreach_event_blk)
     end.compact
   end
 
   class << self
     private
 
-    def get_events
-      # resize the window so we get the better-organized calendar view
-      max_width, max_height = $driver.execute_script("return [window.screen.availWidth, window.screen.availHeight];")
-      $driver.manage.window.resize_to(2000, max_height)
-      month_groups = $driver.css(".seetickets-calendar")
-      month_headers = $driver.css(".seetickets-calendar-year-month-container")
-      month_groups.flat_map.with_index do |month_group, idx|
-        events = month_group.css(".seetickets-calendar-event-container")
-        month = month_headers[idx]
-        events.map { |event| [month, event] }
+    def get_events(events_limit)
+      events = []
+      cookies = {}
+      url = MAIN_URL
+      while url && events.length < events_limit
+        document = Nokogiri::HTML(fetch(url, cookies))
+        page = document.css(".search-event")
+        break if page.empty?
+        events.concat(page)
+        url = next_page_url(document, events.length)
       end
+      events.first(events_limit)
     end
 
-    def parse_event_data(month_node, event, &foreach_event_blk)
-      month, year = month_node.text.split(" ")
-      day = event.parent.css(".date-number")[0].text.to_i
+    # Later pages need the session cookies set by the first page.
+    def fetch(url, cookies, redirects = 5)
+      uri = URI(url)
+      request = Net::HTTP::Get.new(uri)
+      request["Cookie"] = cookies.map { |k, v| "#{k}=#{v}" }.join("; ") if cookies.any?
+      response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") { |http| http.request(request) }
+      Array(response.get_fields("set-cookie")).each do |cookie|
+        name, value = cookie.split(";", 2).first.split("=", 2)
+        cookies[name] = value
+      end
+      if response.is_a?(Net::HTTPRedirection) && redirects > 0
+        return fetch(URI.join(url, response["location"]).to_s, cookies, redirects - 1)
+      end
+      response.value
+      response.body
+    end
+
+    # Pagination links offset by "_lfv" (events already shown).
+    def next_page_url(document, offset)
+      link = document.css("a[href*='_lfv=#{offset}']").first
+      link && URI.join(MAIN_URL, link["href"]).to_s
+    end
+
+    def parse_event_data(event, &foreach_event_blk)
+      link = event.at_css(".get-tickets-overlay a[aria-label]")
+      return if link.blank?
+
+      title = event.at_css(".event-name")&.text&.strip
+      return if title.blank?
+
+      # aria-label: "Buy tickets for <title> on November 18 2026"
+      date_str = link["aria-label"][/ on (\w+ \d{1,2} \d{4})\z/, 1]
+      return if date_str.blank?
+
       {
-        date: DateTime.parse("#{month} #{day}, #{year}"),
-        img: event.css(".seetickets-calendar-event-picture").map { |x| x.attribute("src") }.compact.first,
-        title: event.css(".title")[0].text,
-        url: event.css(".title a")[0].attribute("href"),
+        date: DateTime.parse(date_str),
+        img: event.at_css(".img-holder img")&.[]("src").to_s,
+        title: title,
+        url: URI.join(MAIN_URL, link["href"]).to_s,
         details: ""
       }.
         tap { |data| Utils.print_event_preview(self, data) }.

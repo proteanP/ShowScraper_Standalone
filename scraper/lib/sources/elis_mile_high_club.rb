@@ -1,4 +1,6 @@
 class ElisMileHighClub
+  # Venue closed; it no longer lists events.
+  DISABLED = true
 
   MAIN_URL = "https://www.elismilehighclub.com/"
 

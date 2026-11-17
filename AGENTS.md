@@ -128,7 +128,7 @@ Each adapter class in `scraper/lib/sources` should:
 
 - Configured sources in `sources.json`: `47`
 - Ruby source classes present: `48` (extra legacy class `DnaLounge_OLD`, not in `sources.json`)
-- Disabled sources (`DISABLED = true`): `Amados`, `Eagle`, `ElboRoom`, `NewParish`, `Starline`
+- Disabled sources (`DISABLED = true`): `Amados`, `Eagle`, `ElboRoom`, `ElisMileHighClub`, `GoldenBull`, `MusicCitySanFrancisco`, `NewParish`, `Starline`, `TheeParkside`
 
 ### Scraper strategy variants
 

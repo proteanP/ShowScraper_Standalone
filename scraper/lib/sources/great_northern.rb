@@ -42,9 +42,13 @@ class GreatNorthern
     end
 
     def parse_event_data(event, &foreach_event_blk)
+      date = DateTime.parse(event.css(".date")[0].text)
+      # The listing omits the year, so dates that already passed belong to next year.
+      date = date.next_year if date < DateTime.now - 1
+
       {
-        date: DateTime.parse(event.css(".date")[0].text),
-        img: event.css(".logo img")[0].attribute("src"),
+        date: date,
+        img: event.css(".logo img")[0]&.attribute("src"),
         title: event.css(".title")[0].text,
         url: event.css(".title a")[0].attribute("href"),
         details: ""

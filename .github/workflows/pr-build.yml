@@ -1,0 +1,32 @@
+# Installs the gems and loads the scraper on every PR, so the Fable review gate
+# (proteanP/services-directory StackUpdate) only merges dependency updates that still
+# load. Runs with a read-only token. There are no tests yet; add them here when there are.
+name: pr-build
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+      - name: Load the scraper and its sources
+        env:
+          NO_DB: "true"
+          NO_GCS: "true"
+        run: |
+          bundle exec ruby -e '
+            require "./scraper/scraper.rb"
+            require "google/cloud/storage"
+            Google::Cloud::Storage.anonymous
+            puts "loaded"'

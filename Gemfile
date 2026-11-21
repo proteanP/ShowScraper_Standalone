@@ -9,8 +9,7 @@ gem 'nokogiri'
 gem 'rss'
 
 # Testing
-#gem 'rspec'
-#gem 'database_cleaner'
+gem 'minitest'
 
 # scraper stuff
 gem 'selenium-webdriver'

@@ -1,0 +1,25 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//indybay/ical// v1.0//EN
+BEGIN:VEVENT
+UID:Indybay-1
+SUMMARY:Community potluck and 
+ open mic
+DESCRIPTION:Bring a dish\, an instrument\; or both.\nAll ages.
+LOCATION:Lake Merritt\nhttps://example.org/map
+URL:https://www.indybay.org/newsitems/2026/11/20/1.php
+DTSTART:20261121T170000Z
+DTEND:20261121T193000Z
+END:VEVENT
+BEGIN:VEVENT
+UID:Indybay-2
+SUMMARY:All-day teach-in
+URL:https://www.indybay.org/newsitems/2026/11/20/2.php
+DTSTART;VALUE=DATE:20261205
+END:VEVENT
+BEGIN:VEVENT
+UID:Indybay-3
+SUMMARY:Event without a link is skipped
+DTSTART:20261206T170000Z
+END:VEVENT
+END:VCALENDAR

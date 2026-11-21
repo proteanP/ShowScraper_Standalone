@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+ <channel>
+  <title>DNA Lounge</title>
+  <link>https://www.dnalounge.com/</link>
+  <description>Upcoming events at DNA Lounge, San Francisco.</description>
+  <item>
+   <title>Nov 14 (Sat): Test Night</title>
+   <guid isPermaLink="true">https://www.dnalounge.com/calendar/2026/11-14.html</guid>
+   <description>Test Night</description>
+   <content:encoded><![CDATA[<DIV CLASS="vevent"><A HREF="https://www.dnalounge.com/calendar/2026/11-14.html" CLASS="url"></A> <ABBR CLASS="dtstart" TITLE="2026-11-14T22:00:00"></ABBR> <DIV CLASS="summary"><A HREF="https://www.dnalounge.com/calendar/2026/11-14.html">Test:<BR> Night</A></DIV> <DIV CLASS="event_flyer"><A HREF="https://www.dnalounge.com/flyers/2026/11/14.html"><IMG SRC="https://cdn.dnalounge.com/flyers/2026/11/14-1-thumb.jpg" ALT="Flyer"></A></DIV></DIV>]]></content:encoded>
+  </item>
+  <item>
+   <title>Nov 15 (Sun): Flyerless Matinee</title>
+   <guid isPermaLink="true">https://www.dnalounge.com/calendar/2026/11-15.html</guid>
+   <description>Flyerless Matinee</description>
+   <content:encoded><![CDATA[<DIV CLASS="vevent"><A HREF="https://www.dnalounge.com/calendar/2026/11-15.html" CLASS="url"></A> <ABBR CLASS="dtstart" TITLE="2026-11-15T15:00:00"></ABBR> <ABBR CLASS="summary" TITLE="Flyerless Matinee"></ABBR></DIV>]]></content:encoded>
+  </item>
+ </channel>
+</rss>

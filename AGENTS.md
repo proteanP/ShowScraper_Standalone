@@ -218,6 +218,7 @@ Primary vars:
 - Run the scraper directly with host Ruby: `bin/run_scraper`
 - For one-off runs and source-specific tests: `bin/run_scraper --sources GreatAmericanMusicHall --limit 5 --skip-persist`
 - Environment variables are loaded from `.env` file via Dotenv.
+- Offline tests (fixtures in `test/fixtures`, no browser, network or GCS): `bundle exec ruby test/scraper_test.rb`. CI runs them on every PR; when you change a source that has a fixture test, update the fixture or test with it.
 
 ---
 

@@ -1,6 +1,6 @@
-# Installs the gems and loads the scraper on every PR, so the Fable review gate
-# (proteanP/services-directory StackUpdate) only merges dependency updates that still
-# load. Runs with a read-only token. There are no tests yet; add them here when there are.
+# Installs the gems, loads the scraper and runs the offline tests on every PR, so the Fable
+# review gate (proteanP/services-directory StackUpdate) only merges dependency updates that
+# still work. Runs with a read-only token.
 name: pr-build
 
 on:
@@ -30,3 +30,5 @@ jobs:
             require "google/cloud/storage"
             Google::Cloud::Storage.anonymous
             puts "loaded"'
+      - name: Run the offline tests
+        run: bundle exec ruby test/scraper_test.rb

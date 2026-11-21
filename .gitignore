@@ -26,3 +26,4 @@ bin/geckodriver
 
 # Local gems installed by bin/setup_sprite
 vendor/bundle/
+.bundle/

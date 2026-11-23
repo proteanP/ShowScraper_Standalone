@@ -29,6 +29,7 @@ class ThePlanetarium
     end
 
     def parse_event_data(event, &foreach_event_blk)
+      event.css(".event-description br").each { |br| br.replace("\n") }
       description_text = event.css(".event-description").text
       return unless planetarium_event?(description_text)
 
